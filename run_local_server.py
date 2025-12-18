@@ -166,6 +166,9 @@ class HardwareService(rpyc.Service):
     def exposed_stage_move_to(self, position, stage_type=2, timeout=60000):
         """Move to absolute position"""
         try:
+            # 确保 position 是 float 类型
+            position = float(position)
+            
             if stage_type in global_stages and global_stages[stage_type].is_connected:
                 global_stages[stage_type].move_to(position, timeout)
                 return True
