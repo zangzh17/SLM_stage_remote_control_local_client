@@ -10,6 +10,8 @@ import subprocess
 import os
 from hardware import SLMManager
 from thorlabs_stage import ThorlabsStage
+import signal
+import sys
 
 # ============== AHK Configuration ==============
 AHK_EXE = r'C:\Program Files\AutoHotkey\AutoHotkey.exe'
@@ -233,7 +235,38 @@ class HardwareService(rpyc.Service):
         }
 
 
+def cleanup():
+    """Clean up all hardware connections"""
+    print("\n🛑 Shutting down...")
+    
+    # Disconnect all stages
+    for stage_type, stage in global_stages.items():
+        try:
+            if stage.is_connected:
+                stage.disconnect()
+                print(f"   ✅ Stage {stage_type} disconnected")
+        except:
+            pass
+    
+    # Close SLM if needed
+    try:
+        if hasattr(global_slm_manager, 'close'):
+            global_slm_manager.close()
+            print("   ✅ SLM closed")
+    except:
+        pass
+    
+    print("👋 Goodbye!")
+
+def signal_handler(sig, frame):
+    cleanup()
+    sys.exit(0)
+
 if __name__ == "__main__":
+    # Register signal handlers
+    signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
+    signal.signal(signal.SIGTERM, signal_handler)  # kill command
+
     # 1. Initialize SLM hardware
     print("=" * 50)
     print("Initializing hardware components...")
@@ -277,10 +310,15 @@ if __name__ == "__main__":
     print("   - AHK control (capture_position, click_at)")
     print("=" * 50 + "\n")
     
-    server = ThreadedServer(
-        HardwareService, 
-        port=18861, 
-        hostname='127.0.0.1', 
-        protocol_config={'allow_public_attrs': True}
-    )
-    server.start()
+    try:
+        server = ThreadedServer(
+            HardwareService, 
+            port=18861, 
+            hostname='127.0.0.1', 
+            protocol_config={'allow_public_attrs': True}
+        )
+        server.start()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        cleanup()
