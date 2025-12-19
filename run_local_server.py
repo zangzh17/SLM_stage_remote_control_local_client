@@ -243,18 +243,24 @@ if __name__ == "__main__":
     global_slm_manager = SLMManager(sim_mode=False)
     
     # 2. Initialize and connect stages at startup
-    print("\n[2/3] Initializing and connecting Stage...")
+    print("\n[2/3] Initializing and connecting Stages...")
     global_stages = {}
     
-    # Connect Z-axis stage (Z825B) at startup
-    DEFAULT_STAGE_TYPE = 2  # Z825B
-    try:
-        global_stages[DEFAULT_STAGE_TYPE] = ThorlabsStage(DEFAULT_STAGE_TYPE)
-        global_stages[DEFAULT_STAGE_TYPE].connect()
-        print(f"✅ Stage {DEFAULT_STAGE_TYPE} (Z825B) connected and ready")
-    except Exception as e:
-        print(f"⚠️ Warning: Failed to connect Stage {DEFAULT_STAGE_TYPE}: {e}")
-        print("   Stage will be available for on-demand connection")
+    # Stage type definitions
+    STAGE_CONFIGS = {
+        1: "PRM1-Z8",   # Rotation stage
+        2: "Z825B",     # Z-axis linear stage
+    }
+    
+    # Connect both stages at startup
+    for stage_type, stage_name in STAGE_CONFIGS.items():
+        try:
+            global_stages[stage_type] = ThorlabsStage(stage_type)
+            global_stages[stage_type].connect()
+            print(f"✅ Stage {stage_type} ({stage_name}) connected and ready")
+        except Exception as e:
+            print(f"⚠️ Warning: Failed to connect Stage {stage_type} ({stage_name}): {e}")
+            print("   Stage will be available for on-demand connection")
     
     # 3. Initialize AHK manager
     print("\n[3/3] Initializing AHK manager...")
@@ -266,6 +272,8 @@ if __name__ == "__main__":
     print("   Available services:")
     print("   - SLM control (upload_frame)")
     print("   - Stage control (connect, home, move_to, get_position)")
+    print(f"     - Stage 1: PRM1-Z8 (Rotation)")
+    print(f"     - Stage 2: Z825B (Z-axis)")
     print("   - AHK control (capture_position, click_at)")
     print("=" * 50 + "\n")
     
